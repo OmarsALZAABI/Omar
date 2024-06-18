@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حساب مدة الدورة</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            border: 2px solid #000;
+            background-color: #f0f8ff;
+            box-sizing: border-box;
+        }
+        .date-input,
+        .time-input {
+            padding: 10px;
+            margin: 10px;
+            width: calc(100% - 22px); /* Adjusting for padding and border */
+        }
+        .button {
+            padding: 10px 20px;
+            margin: 20px;
+            cursor: pointer;
+        }
+        .result {
+            display: none;
+            margin-top: 20px;
+            border-top: 1px solid #000;
+            padding-top: 20px;
+        }
+        .countdown-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .countdown {
+            border: 1px solid #000;
+            padding: 10px;
+            width: 45%;
+        }
+        @media (min-width: 600px) {
+            .container {
+                width: 60%;
+            }
+        }
+        @media (min-width: 768px) {
+            .container {
+                width: 50%;
+            }
+        }
+        @media (min-width: 1024px) {
+            .container {
+                width: 40%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>تم إنشاء هذه الصفحة بإستخدام الذكاء الإصطناعي</h3>
+        <div>
+            <label>تاريخ الدورة من: </label>
+            <input type="date" id="startDate" class="date-input" value="2023-09-03">
+            <label>إلى: </label>
+            <input type="date" id="endDate" class="date-input" value="2024-07-10">
+        </div>
+        <div>
+            <label>تاريخ اليوم: </label>
+            <input type="date" id="todayDate" class="date-input">
+            <label>الساعة الآن: </label>
+            <input type="time" id="currentTime" class="time-input">
+        </div>
+        <div>
+            <label>عدد أيام الإجازات قبل تاريخ اليوم: </label>
+            <input type="number" id="holidaysBefore" class="date-input" value="30">
+        </div>
+        <div>
+            <label>عدد أيام الإجازات بعد تاريخ اليوم: </label>
+            <input type="number" id="holidaysAfter" class="date-input" value="0">
+        </div>
+        <button class="button" onclick="calculate()">إحسب</button>
+        
+        <div class="result" id="result">
+            <p>إجمالي عدد الأسابيع: <span id="totalWeeks"></span></p>
+            <p>إجمالي عدد الأيام: <span id="totalDays"></span></p>
+            <p>إجمالي عدد أيام العمل: <span id="workDays"></span></p>
+            <p>إجمالي عدد الأيام المتبقية: <span id="remainingDays"></span></p>
+            <p>إجمالي عدد أيام العمل المتبقية: <span id="remainingWorkDays"></span></p>
+            <p>إجمالي عدد الساعات المتبقية على نهاية الدورة: <span id="remainingHours"></span></p>
+        </div>
+        <div class="countdown-container">
+            <div class="countdown">
+                <p>الإجمالي حتى نهاية الدورة:</p>
+                <p id="totalCountdown"></p>
+            </div>
+            <div class="countdown">
+                <p>ساعات العمل المتبقية:</p>
+                <p id="workCountdown"></p>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <p>حقوق الطبع محفوظة - فيش أند شيبس</p>
+    </footer>
+    <script>
+        document.getElementById('todayDate').valueAsDate = new Date();
+        document.getElementById('currentTime').value = new Date().toTimeString().slice(0, 5);
+
+        function calculate() {
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            const todayDate = new Date(document.getElementById('todayDate').value);
+            const currentTime = document.getElementById('currentTime').value;
+            const holidaysBefore = parseInt(document.getElementById('holidaysBefore').value);
+            const holidaysAfter = parseInt(document.getElementById('holidaysAfter').value);
+
+            const [currentHour, currentMinute] = currentTime.split(':').map(Number);
+            let remainingHoursToday = 0;
+
+            if (todayDate.toDateString() === new Date().toDateString()) {
+                if ((todayDate.getDay() === 5 && (currentHour > 10 || (currentHour === 10 && currentMinute > 30))) ||
+                    (todayDate.getDay() !== 5 && currentHour >= 14)) {
+                    // If today is Friday and it's past 10:30 AM or it's another weekday and it's past 2:00 PM
+                    todayDate.setDate(todayDate.getDate() + 1);
+                }
+            }
+
+            const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+            const totalWeeks = totalDays / 7;
+            const workDays = calculateWorkDays(startDate, endDate) - holidaysBefore;
+
+            const remainingDays = Math.ceil((endDate - todayDate) / (1000 * 60 * 60 * 24));
+            const remainingWorkDays = calculateRemainingWorkDays(todayDate, endDate, holidaysAfter);
+            const remainingHours = calculateRemainingHours(todayDate, endDate, holidaysAfter);
+
+            document.getElementById('totalWeeks').innerText = totalWeeks.toFixed(1);
+            document.getElementById('totalDays').innerText = totalDays;
+            document.getElementById('workDays').innerText = workDays;
+            document.getElementById('remainingDays').innerText = remainingDays;
+            document.getElementById('remainingWorkDays').innerText = remainingWorkDays;
+            document.getElementById('remainingHours').innerText = remainingHours.toFixed(1);
+
+            document.getElementById('result').style.display = 'block';
+
+            startCountdown(endDate, "totalCountdown");
+            startWorkCountdown(currentHour, currentMinute, "workCountdown");
+        }
+
+        function calculateWorkDays(start, end) {
+            let count = 0;
+            const curDate = new Date(start);
+            while (curDate <= end) {
+                const dayOfWeek = curDate.getDay();
+                if (dayOfWeek !== 6 && dayOfWeek !== 0) { // Skip Saturday (6) and Sunday (0)
+                    count++;
+                }
+                curDate.setDate(curDate.getDate() + 1);
+            }
+            return count;
+        }
+
+        function calculateRemainingWorkDays(start, end, holidays) {
+            let count = 0;
+            const curDate = new Date(start);
+            while (curDate <= end) {
+                const dayOfWeek = curDate.getDay();
+                if (dayOfWeek !== 6 && dayOfWeek !== 0) { // Skip Saturday (6) and Sunday (0)
+                    count++;
+                }
+                curDate.setDate(curDate.getDate() + 1);
+            }
+            return count - holidays;
+        }
+
+        function calculateRemainingHours(start, end, holidays) {
+            let hours = 0;
+            const curDate = new Date(start);
+            while (curDate <= end) {
+                const dayOfWeek = curDate.getDay();
+                if (dayOfWeek !== 6 && dayOfWeek !== 0) { // Skip Saturday (6) and Sunday (0)
+                    if (dayOfWeek === 5) {
+                        hours += 3.5; // Friday
+                    } else {
+                        hours += 7; // Other weekdays
+                    }
+                }
+                curDate.setDate(curDate.getDate() + 1);
+            }
+            return hours - (holidays * 7);
+        }
+
+        function startCountdown(endDate, elementId) {
+            const countdownElement = document.getElementById(elementId);
+
+            function updateCountdown() {
+                const now = new Date();
+                const distance = endDate - now;
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                countdownElement.innerText = `${days} يوم، ${hours} ساعة، ${minutes} دقيقة، ${seconds} ثانية`;
+
+                if (distance < 0) {
+                    clearInterval(interval);
+                    countdownElement.innerText = "انتهت الدورة";
+                }
+            }
+
+            updateCountdown();
+            const interval = setInterval(updateCountdown, 1000);
+        }
+
+        function startWorkCountdown(currentHour, currentMinute, elementId) {
+            const workCountdownElement = document.getElementById(elementId);
+
+            function updateWorkCountdown() {
+                const now = new Date();
+                let endOfWorkDay = new Date(now);
+                endOfWorkDay.setHours(14, 0, 0, 0);
+
+                if (now.getHours() >= 14 || now.getHours() < 7 || (now.getDay() === 5 && (now.getHours() > 10 || (now.getHours() === 10 && now.getMinutes() > 30)))) {
+                    endOfWorkDay = new Date(now);
+                    endOfWorkDay.setDate(now.getDate() + 1);
+                    endOfWorkDay.setHours(7, 0, 0, 0);
+                }
+
+                const distance = endOfWorkDay - now;
+
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                workCountdownElement.innerText = `${hours} ساعة، ${minutes} دقيقة، ${seconds} ثانية`;
+
+                if (distance < 0) {
+                    clearInterval(interval);
+                    workCountdownElement.innerText = "انتهى يوم العمل";
+                }
+            }
+
+            updateWorkCountdown();
+            const interval = setInterval(updateWorkCountdown, 1000);
+        }
+    </script>
+</body>
+</html>
