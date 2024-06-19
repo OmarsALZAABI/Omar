@@ -37,19 +37,26 @@
             border-top: 1px solid #000;
             padding-top: 20px;
         }
-
+        .countdown-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .countdown {
+            border: 1px solid #000;
+            padding: 10px;
+            width: 45%;
+        }
         @media (min-width: 600px) {
             .container {
                 width: 60%;
             }
         }
-
         @media (min-width: 768px) {
             .container {
                 width: 50%;
             }
         }
-
         @media (min-width: 1024px) {
             .container {
                 width: 40%;
@@ -89,6 +96,16 @@
             <p>إجمالي عدد الأيام المتبقية: <span id="remainingDays"></span></p>
             <p>إجمالي عدد أيام العمل المتبقية: <span id="remainingWorkDays"></span></p>
             <p>إجمالي عدد الساعات المتبقية على نهاية الدورة: <span id="remainingHours"></span></p>
+        </div>
+        <div class="countdown-container">
+            <div class="countdown">
+                <p>الإجمالي حتى نهاية الدورة:</p>
+                <p id="totalCountdown"></p>
+            </div>
+            <div class="countdown">
+                <p>ساعات العمل المتبقية:</p>
+                <p id="workCountdown"></p>
+            </div>
         </div>
     </div>
     <footer>
@@ -133,6 +150,9 @@
             document.getElementById('remainingHours').innerText = remainingHours.toFixed(1);
 
             document.getElementById('result').style.display = 'block';
+
+            startCountdown(endDate, "totalCountdown");
+            startWorkCountdown(todayDate, currentHour, currentMinute, remainingHours, "workCountdown");
         }
 
         function calculateWorkDays(start, end) {
@@ -176,6 +196,78 @@
                 curDate.setDate(curDate.getDate() + 1);
             }
             return hours - (holidays * 7);
+        }
+
+        function startCountdown(endDate, elementId) {
+            const countdownElement = document.getElementById(elementId);
+
+            function updateCountdown() {
+                const now = new Date();
+                const distance = endDate - now;
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                countdownElement.innerText = `${days} يوم، ${hours} ساعة، ${minutes} دقيقة، ${seconds} ثانية`;
+
+                if (distance < 0) {
+                    clearInterval(interval);
+                    countdownElement.innerText = "انتهت الدورة";
+                }
+            }
+
+            updateCountdown();
+            const interval = setInterval(updateCountdown, 1000);
+        }
+
+        function startWorkCountdown(todayDate, currentHour, currentMinute, remainingHours, elementId) {
+            const workCountdownElement = document.getElementById(elementId);
+            let remainingMilliseconds = remainingHours * 60 * 60 * 1000;
+
+            function updateWorkCountdown() {
+                const now = new Date();
+                const currentDayOfWeek = now.getDay();
+                const currentHour = now.getHours();
+                const currentMinute = now.getMinutes();
+                const currentSecond = now.getSeconds();
+
+                // Check if current time is outside working hours
+                if ((currentDayOfWeek === 5 && (currentHour >= 10 && currentMinute > 30)) || 
+                    (currentDayOfWeek !== 5 && currentHour >= 14)) {
+                    // Stop countdown and wait until next working day at 07:00 AM
+                    const nextWorkDay = new Date(now);
+                    if (currentDayOfWeek === 5) {
+                        nextWorkDay.setDate(nextWorkDay.getDate() + 2); // Skip to Sunday
+                    } else {
+                        nextWorkDay.setDate(nextWorkDay.getDate() + 1); // Move to next day
+                    }
+                    nextWorkDay.setHours(7, 0, 0, 0);
+
+                    const distance = nextWorkDay - now;
+                    remainingMilliseconds -= distance;
+
+                    setTimeout(updateWorkCountdown, distance);
+                    return;
+                }
+
+                const hours = Math.floor(remainingMilliseconds / (1000 * 60 * 60));
+                const minutes = Math.floor((remainingMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((remainingMilliseconds % (1000 * 60)) / 1000);
+
+                workCountdownElement.innerText = `${hours} ساعة، ${minutes} دقيقة، ${seconds} ثانية`;
+
+                if (remainingMilliseconds <= 0) {
+                    clearInterval(interval);
+                    workCountdownElement.innerText = "انتهى وقت العمل";
+                } else {
+                    remainingMilliseconds -= 1000;
+                }
+            }
+
+            updateWorkCountdown();
+            let interval = setInterval(updateWorkCountdown, 1000);
         }
     </script>
 </body>
