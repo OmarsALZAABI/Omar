@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>الباقي على الدورة</title>
+    <title>حساب مدة الدورة</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -47,24 +47,9 @@
             padding: 10px;
             width: 45%;
         }
-        @media (min-width: 600px) {
-            .container {
-                width: 60%;
-            }
-        }
-        @media (min-width: 768px) {
-            .container {
-                width: 50%;
-            }
-        }
-        @media (min-width: 1024px) {
-            .container {
-                width: 40%;
-            }
-        }
     </style>
 </head>
-<body>
+<body onload="initializeDateTimeFields()">
     <div class="container">
         <h3>تم إنشاء هذه الصفحة بإستخدام الذكاء الإصطناعي</h3>
         <div>
@@ -90,12 +75,13 @@
         <button class="button" onclick="calculate()">إحسب</button>
         
         <div class="result" id="result">
-            <p>إجمالي عدد الأسابيع: <span id="totalWeeks"></span></p>
+            <p>إجمالي عدد الأسابيع والأيام: <span id="totalWeeks"></span></p>
             <p>إجمالي عدد الأيام: <span id="totalDays"></span></p>
             <p>إجمالي عدد أيام العمل: <span id="workDays"></span></p>
             <p>إجمالي عدد الأيام المتبقية: <span id="remainingDays"></span></p>
             <p>إجمالي عدد أيام العمل المتبقية: <span id="remainingWorkDays"></span></p>
             <p>إجمالي عدد الساعات المتبقية على نهاية الدورة: <span id="remainingHours"></span></p>
+            <p>نحن الآن في الأسبوع: <span id="currentWeek"></span></p>
         </div>
         <div class="countdown-container">
             <div class="countdown">
@@ -112,8 +98,14 @@
         <p>حقوق الطبع محفوظة - فيش أند شيبس</p>
     </footer>
     <script>
-        document.getElementById('todayDate').valueAsDate = new Date();
-        document.getElementById('currentTime').value = new Date().toTimeString().slice(0, 5);
+        function initializeDateTimeFields() {
+            const now = new Date();
+            const dateStr = now.toISOString().substring(0, 10);
+            const timeStr = now.toTimeString().substring(0, 5);
+
+            document.getElementById('todayDate').value = dateStr;
+            document.getElementById('currentTime').value = timeStr;
+        }
 
         function calculate() {
             const startDate = new Date(document.getElementById('startDate').value);
@@ -129,25 +121,26 @@
             if (todayDate.toDateString() === new Date().toDateString()) {
                 if ((todayDate.getDay() === 5 && (currentHour > 10 || (currentHour === 10 && currentMinute > 30))) ||
                     (todayDate.getDay() !== 5 && currentHour >= 14)) {
-                    // If today is Friday and it's past 10:30 AM or it's another weekday and it's past 2:00 PM
                     todayDate.setDate(todayDate.getDate() + 1);
                 }
             }
 
             const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-            const totalWeeks = totalDays / 7;
+            const totalWeeks = Math.floor(totalDays / 7);
+            const extraDays = totalDays % 7;
             const workDays = calculateWorkDays(startDate, endDate) - holidaysBefore;
 
             const remainingDays = Math.ceil((endDate - todayDate) / (1000 * 60 * 60 * 24));
             const remainingWorkDays = calculateRemainingWorkDays(todayDate, endDate, holidaysAfter);
             const remainingHours = calculateRemainingHours(todayDate, endDate, holidaysAfter);
 
-            document.getElementById('totalWeeks').innerText = totalWeeks.toFixed(1);
+            document.getElementById('totalWeeks').innerText = `${totalWeeks} أسبوع و ${extraDays} أيام`;
             document.getElementById('totalDays').innerText = totalDays;
             document.getElementById('workDays').innerText = workDays;
             document.getElementById('remainingDays').innerText = remainingDays;
             document.getElementById('remainingWorkDays').innerText = remainingWorkDays;
-            document.getElementById('remainingHours').innerText = remainingHours.toFixed(1);
+            document.getElementById('remainingHours').innerText = `${Math.floor(remainingHours)} ساعة و ${Math.floor((remainingHours - Math.floor(remainingHours)) * 60)} دقيقة`;
+            document.getElementById('currentWeek').innerText = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24 * 7)) + 1;
 
             document.getElementById('result').style.display = 'block';
 
@@ -160,7 +153,7 @@
             const curDate = new Date(start);
             while (curDate <= end) {
                 const dayOfWeek = curDate.getDay();
-                if (dayOfWeek !== 6 && dayOfWeek !== 0) { // Skip Saturday (6) and Sunday (0)
+                if (dayOfWeek !== 6 && dayOfWeek !== 0) {
                     count++;
                 }
                 curDate.setDate(curDate.getDate() + 1);
@@ -173,7 +166,7 @@
             const curDate = new Date(start);
             while (curDate <= end) {
                 const dayOfWeek = curDate.getDay();
-                if (dayOfWeek !== 6 && dayOfWeek !== 0) { // Skip Saturday (6) and Sunday (0)
+                if (dayOfWeek !== 6 && dayOfWeek !== 0) {
                     count++;
                 }
                 curDate.setDate(curDate.getDate() + 1);
@@ -186,7 +179,7 @@
             const curDate = new Date(start);
             while (curDate <= end) {
                 const dayOfWeek = curDate.getDay();
-                if (dayOfWeek !== 6 && dayOfWeek !== 0) { // Skip Saturday (6) and Sunday (0)
+                if (dayOfWeek !== 6 && dayOfWeek !== 0) {
                     if (dayOfWeek === 5) {
                         hours += 3.5; // Friday
                     } else {
@@ -231,26 +224,28 @@
                 const currentDayOfWeek = now.getDay();
                 const currentHour = now.getHours();
                 const currentMinute = now.getMinutes();
-                const currentSecond = now.getSeconds();
 
                 // Check if current time is outside working hours
                 if ((currentDayOfWeek === 5 && (currentHour >= 10 && currentMinute > 30)) || 
-                    (currentDayOfWeek !== 5 && currentHour >= 14)) {
-                    // Stop countdown and wait until next working day at 07:00 AM
+                    (currentDayOfWeek !== 5 && currentHour >= 14) || 
+                    (currentHour < 7)) {
+                    // Display stopped countdown and wait until next working day at 07:00 AM
+                    workCountdownElement.innerText = "انتهى وقت العمل، سيتم الاستئناف غداً الساعة 07:00";
+
                     const nextWorkDay = new Date(now);
-                    if (currentDayOfWeek === 5) {
-                        nextWorkDay.setDate(nextWorkDay.getDate() + 2); // Skip to Sunday
-                    } else {
-                        nextWorkDay.setDate(nextWorkDay.getDate() + 1); // Move to next day
+                    if (currentHour >= 14 || (currentDayOfWeek === 5 && (currentHour >= 10 && currentMinute > 30))) {
+                        // If today is Friday, skip to Sunday
+                        nextWorkDay.setDate(currentDayOfWeek === 5 ? nextWorkDay.getDate() + 2 : nextWorkDay.getDate() + 1);
+                    } else if (currentHour < 7) {
+                        nextWorkDay.setHours(7, 0, 0, 0);
                     }
-                    nextWorkDay.setHours(7, 0, 0, 0);
 
                     const distance = nextWorkDay - now;
-                    remainingMilliseconds -= distance;
-
                     setTimeout(updateWorkCountdown, distance);
                     return;
                 }
+
+                remainingMilliseconds -= 1000;
 
                 const hours = Math.floor(remainingMilliseconds / (1000 * 60 * 60));
                 const minutes = Math.floor((remainingMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
@@ -261,8 +256,6 @@
                 if (remainingMilliseconds <= 0) {
                     clearInterval(interval);
                     workCountdownElement.innerText = "انتهى وقت العمل";
-                } else {
-                    remainingMilliseconds -= 1000;
                 }
             }
 
